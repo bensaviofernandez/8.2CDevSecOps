@@ -30,6 +30,10 @@ pipeline {
           # unzip quietly and overwrite if needed
           unzip -o -qq sonar-scanner.zip
 
+          # 👉 Force wrapper to use the embedded JRE17
+          export JAVA_HOME=$PWD/sonar-scanner-4.8.0.2856-linux/jre
+          export PATH=$JAVA_HOME/bin:$PATH
+
           # run scanner
           ./sonar-scanner-*/bin/sonar-scanner \
             -Dsonar.host.url=https://sonarcloud.io \
