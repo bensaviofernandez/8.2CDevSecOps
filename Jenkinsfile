@@ -25,23 +25,33 @@ pipeline {
     }
 
     stage('SonarCloud Analysis') {
+      environment { SONAR_TOKEN = credentials('SONAR_TOKEN') }
       steps {
         sh '''
-          #--- Run the scanner inside an ephemeral container ----------------------
-          docker run --rm \
-            -e SONAR_TOKEN=$SONAR_TOKEN \
-            -v "$PWD:/usr/src" \
-            sonarsource/sonar-scanner-cli:4.8 \
-              -Dsonar.host.url=https://sonarcloud.io \
-              -Dsonar.organization=bensaviofernandez \
-              -Dsonar.projectKey=bensaviofernandez_8.2CDevSecOps \
-              -Dsonar.token=$SONAR_TOKEN \
-              -Dsonar.sources=. \
-              -Dsonar.exclusions=node_modules/** \
-              -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+          set -e
+          SCANNER_DIR=sonar-scanner-4.8.0.2856-linux
+
+          if [ ! -d "$SCANNER_DIR" ]; then
+            curl -sSLo sonar-scanner.zip \
+                https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${SCANNER_DIR}.zip
+            unzip -o -qq sonar-scanner.zip
+          fi
+
+          /usr/lib/jvm/java-17-openjdk-amd64/bin/java -jar \
+            $SCANNER_DIR/lib/sonar-scanner-cli-4.8.0.2856.jar \
+            -Dscanner.home=$SCANNER_DIR \
+            -Dproject.settings=sonar-project.properties \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.organization=bensaviofernandez \
+            -Dsonar.projectKey=bensaviofernandez_8.2CDevSecOps \
+            -Dsonar.token=$SONAR_TOKEN \
+            -Dsonar.sources=. \
+            -Dsonar.exclusions=node_modules/** \
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
         '''
       }
     }
+
 
     stage('Security Audit') {
       steps { sh 'npm audit --json > audit.json || true' }
