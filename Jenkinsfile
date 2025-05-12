@@ -25,32 +25,44 @@ pipeline {
     }
 
     stage('SonarCloud Analysis') {
-      environment { SONAR_TOKEN = credentials('SONAR_TOKEN') }
+      // store the token in Jenkins as a “Secret text” credential called SONAR_TOKEN
+      environment {
+        SONAR_TOKEN = credentials('SONAR_TOKEN')      // <-- make sure this ID exists
+        SONAR_SCANNER_VERSION = '7.0.2.4839'
+      }
       steps {
+        // one portable shell script
         sh '''
           set -e
-          SCANNER_DIR=sonar-scanner-4.8.0.2856-linux
 
-          if [ ! -d "$SCANNER_DIR" ]; then
-            curl -sSLo sonar-scanner.zip \
-                https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${SCANNER_DIR}.zip
-            unzip -o -qq sonar-scanner.zip
+          # Where we’ll cache the scanner inside the Jenkins agent’s $HOME
+          export SCANNER_HOME="$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64"
+
+          # ─── Download & unzip once ──────────────────────────────────────────
+          if [ ! -d "$SCANNER_HOME" ]; then
+            mkdir -p "$HOME/.sonar"
+            curl --create-dirs -sSLo "$HOME/.sonar/sonar-scanner.zip" \
+              "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip"
+            unzip -o -qq "$HOME/.sonar/sonar-scanner.zip" -d "$HOME/.sonar/"
           fi
 
-          /usr/lib/jvm/java-17-openjdk-amd64/bin/java -jar \
-            $SCANNER_DIR/lib/sonar-scanner-cli-4.8.0.2856.jar \
-            -Dscanner.home=$SCANNER_DIR \
-            -Dproject.settings=sonar-project.properties \
+          # ─── Put scanner on PATH ───────────────────────────────────────────
+          export PATH="$SCANNER_HOME/bin:$PATH"
+          export SONAR_SCANNER_OPTS="-server"
+
+          # ─── Run analysis ──────────────────────────────────────────────────
+          sonar-scanner \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.organization=bensaviofernandez-1 \
+            -Dsonar.organization=bensaviofernandez \
             -Dsonar.projectKey=bensaviofernandez_8.2CDevSecOps \
-            -Dsonar.token=$SONAR_TOKEN \
+            -Dsonar.token="$SONAR_TOKEN" \
             -Dsonar.sources=. \
             -Dsonar.exclusions=node_modules/** \
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
         '''
       }
     }
+
 
 
     stage('Security Audit') {
