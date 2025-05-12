@@ -18,18 +18,23 @@ pipeline {
       environment { SONAR_TOKEN = credentials('SONAR_TOKEN') }
       steps {
         sh '''
-          # ─── Force Java 17 ───────────────────────────────────────────────
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          export PATH=$JAVA_HOME/bin:$PATH
-          java -version           # should print "17.0.x"
+          set -e
 
-          # ─── Download & run SonarScanner ────────────────────────────────
-          curl -sSLo sonar-scanner.zip \
-            https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-          rm -rf sonar-scanner-4.8.0.2856-linux
-          unzip -o -qq sonar-scanner.zip
+          SCANNER_DIR=sonar-scanner-4.8.0.2856-linux
 
-          ./sonar-scanner-4.8.0.2856-linux/bin/sonar-scanner \
+          # Download CLI if not already present
+          if [ ! -d "$SCANNER_DIR" ]; then
+            curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${SCANNER_DIR}.zip
+            unzip -o -qq sonar-scanner.zip
+          fi
+
+          # ---------- call scanner with Java 17 explicitly ----------
+          /usr/lib/jvm/java-17-openjdk-amd64/bin/java -version   # show in log
+
+          /usr/lib/jvm/java-17-openjdk-amd64/bin/java \
+            -jar $SCANNER_DIR/lib/sonar-scanner-cli-4.8.0.2856.jar \
+            -Dscanner.home=$SCANNER_DIR \
+            -Dproject.settings=sonar-project.properties \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.login=$SONAR_TOKEN \
             -Dsonar.organization=bensaviofernandez \
@@ -40,7 +45,6 @@ pipeline {
         '''
       }
     }
-
 
 
     stage('Security Audit') {
