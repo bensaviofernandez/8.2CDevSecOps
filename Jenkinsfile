@@ -23,19 +23,25 @@ pipeline {
           # download scanner
           curl -sSLo sonar-scanner.zip \
             https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-          unzip -qq sonar-scanner.zip
 
-          # run scanner with all props inline
+          # blow away any previous extract
+          rm -rf sonar-scanner-4.8.0.2856-linux
+
+          # unzip quietly and overwrite if needed
+          unzip -o -qq sonar-scanner.zip
+
+          # run scanner
           ./sonar-scanner-*/bin/sonar-scanner \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.login=$SONAR_TOKEN \
-            -Dsonar.organization=bensaviofernandez      \\
-            -Dsonar.projectKey=bensaviofernandez_8.2CDevSecOps  \\
-            -Dsonar.sources=.                            \\
-            -Dsonar.exclusions=node_modules/**           \\
+            -Dsonar.organization=bensaviofernandez \
+            -Dsonar.projectKey=bensaviofernandez_8.2CDevSecOps \
+            -Dsonar.sources=. \
+            -Dsonar.exclusions=node_modules/** \
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
         '''
       }
+      
     }
 
 
