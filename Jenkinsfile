@@ -42,7 +42,7 @@ pipeline {
             -Dscanner.home=$SCANNER_DIR \
             -Dproject.settings=sonar-project.properties \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.organization=bensaviofernandez \
+            -Dsonar.organization=bensaviofernandez-1 \
             -Dsonar.projectKey=bensaviofernandez_8.2CDevSecOps \
             -Dsonar.token=$SONAR_TOKEN \
             -Dsonar.sources=. \
