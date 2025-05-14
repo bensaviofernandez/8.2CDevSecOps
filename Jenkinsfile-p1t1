@@ -1,0 +1,68 @@
+/*  Jenkinsfile‑p1t1  –  7‑stage illustrative pipeline
+    Stages and tools exactly match the assessment brief.                 */
+
+pipeline {
+  agent any
+
+  environment {
+    // Example placeholders – change if you later attach real infra
+    STAGING_HOST   = 'ec2‑1‑2‑3‑4.compute.amazonaws.com'
+    PRODUCTION_HOST= 'ec2‑5‑6‑7‑8.compute.amazonaws.com'
+  }
+
+  stages {
+
+    stage('Build') {
+      steps {
+        echo 'Stage 1 ➊ – Build: running Maven package'
+        /* Example real command (commented out):
+        sh 'mvn -B clean package'
+        */
+      }
+    }
+
+    stage('Unit & Integration Tests') {
+      steps {
+        echo 'Stage 2 ➋ – Unit & Integration tests: executing JUnit & Postman'
+        // sh 'mvn test'  OR  sh 'npm test'
+      }
+    }
+
+    stage('Code Analysis') {
+      steps {
+        echo 'Stage 3 ➌ – Static code analysis with PMD / ESLint'
+        // sh 'pmd -d src -R category/java/bestpractices.xml -f text'
+      }
+    }
+
+    stage('Security Scan') {
+      steps {
+        echo 'Stage 4 ➍ – Security scan using OWASP Dependency‑Check'
+        // sh 'dependency-check.sh --project MyApp --scan .'
+      }
+    }
+
+    stage('Deploy to Staging') {
+      steps {
+        echo "Stage 5 ➎ – Deploying build to STAGING (${STAGING_HOST})"
+        /* rsync / scp / helm / kubectl …
+           eg: sh "scp target/app.jar ec2-user@${STAGING_HOST}:/opt/app/" */
+      }
+    }
+
+    stage('Integration Tests on Staging') {
+      steps {
+        echo 'Stage 6 ➏ – Running integration tests against STAGING'
+        // sh 'newman run postman_collection.json --environment staging.postman_env.json'
+      }
+    }
+
+    stage('Deploy to Production') {
+      steps {
+        input message: 'Promote to production?', ok: 'Deploy'   // manual gate
+        echo "Stage 7 ➐ – Deploying build to PRODUCTION (${PRODUCTION_HOST})"
+        // sh "scp target/app.jar ec2-user@${PRODUCTION_HOST}:/opt/app/"
+      }
+    }
+  }
+}
